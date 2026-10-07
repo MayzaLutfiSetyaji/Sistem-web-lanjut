@@ -10,10 +10,12 @@ RUN apt-get update && apt-get install -y \
     git \
     libonig-dev \
     libxml2-dev \
+    sqlite3 \
+    libsqlite3-dev \
     curl
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+RUN docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd
 
 # Install Composer resmi
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -30,6 +32,11 @@ COPY . /var/www/html
 # Install dependensi PHP (vendor)
 RUN composer install --no-dev --optimize-autoloader
 
+# Buat file database.sqlite jika belum ada & atur permission
+RUN touch /var/www/html/database/database.sqlite && \
+    chown -R www-data:www-data /var/www/html/database && \
+    chmod -R 775 /var/www/html/database
+
 # Timpa konfigurasi default Apache agar mengarah ke folder /var/www/html/public
 RUN echo '<VirtualHost *:80>' > /etc/apache2/sites-available/000-default.conf && \
     echo '    ServerAdmin webmaster@localhost' >> /etc/apache2/sites-available/000-default.conf && \
@@ -44,7 +51,10 @@ RUN echo '<VirtualHost *:80>' > /etc/apache2/sites-available/000-default.conf &&
     echo '</VirtualHost>' >> /etc/apache2/sites-available/000-default.conf
 
 # Set permission untuk storage dan cache
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
+    chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Jalankan migration database saat image di-build
+RUN php artisan migrate --force
 
 EXPOSE 80
-RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
