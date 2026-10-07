@@ -47,3 +47,4 @@ RUN echo '<VirtualHost *:80>' > /etc/apache2/sites-available/000-default.conf &&
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 80
+RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
