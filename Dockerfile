@@ -24,19 +24,24 @@ RUN a2enmod rewrite
 # Set Working Directory
 WORKDIR /var/www/html
 
-# Salin file proyek ke container
+# Salin seluruh kode proyek ke container
 COPY . /var/www/html
 
 # Install dependensi PHP (vendor)
 RUN composer install --no-dev --optimize-autoloader
 
-# Atur DocumentRoot Apache ke folder public
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
-
-# Izinkan AllowOverride agar .htaccess Laravel di folder public terbaca
-RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
+# Timpa konfigurasi default Apache agar mengarah ke folder /var/www/html/public
+RUN echo '<VirtualHost *:80>' > /etc/apache2/sites-available/000-default.conf && \
+    echo '    ServerAdmin webmaster@localhost' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '    DocumentRoot /var/www/html/public' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '    <Directory /var/www/html/public>' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '        Options Indexes FollowSymLinks' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '        AllowOverride All' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '        Require all granted' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '    </Directory>' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '    ErrorLog ${APACHE_LOG_DIR}/error.log' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '    CustomLog ${APACHE_LOG_DIR}/access.log combined' >> /etc/apache2/sites-available/000-default.conf && \
+    echo '</VirtualHost>' >> /etc/apache2/sites-available/000-default.conf
 
 # Set permission untuk storage dan cache
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
