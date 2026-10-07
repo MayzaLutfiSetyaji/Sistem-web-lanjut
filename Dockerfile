@@ -57,4 +57,13 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 # Jalankan migration database saat image di-build
 RUN php artisan migrate --force
 
+# Berikan izin akses folder storage, bootstrap/cache, dan database
+RUN mkdir -p /var/www/html/database && \
+    touch /var/www/html/database/database.sqlite && \
+    chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database && \
+    chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
+
 EXPOSE 80
+
+# Jalankan migrasi database otomatis saat container berjalan, lalu jalankan Apache
+CMD php artisan migrate --force && apache2-foreground
